@@ -1,0 +1,8 @@
+@font-face {
+    font-family: myFirstFont;
+    src: url(/src/assets/font/GenJyuuGothic-P-Heavy.ttf);
+}
+  
+.font-style-1 {
+    font-family: myFirstFont;
+}
