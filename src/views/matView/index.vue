@@ -19,17 +19,6 @@
             </button>
         </div>
     </div>
-    <Teleport to="body">
-      <dialogView v-if="dialogStatus" @close="cancel" type="auto">
-        <template v-slot:title></template>
-        <template v-slot:message>
-          <div class="h-[20vh] text-2xl text-red-700 font-bold flex flex-wrap justify-center items-center">
-            {{errorMessage}}
-          </div>
-        </template>
-        <template v-slot:control></template>
-      </dialogView>
-    </Teleport>
   </template>
 
 <script setup>

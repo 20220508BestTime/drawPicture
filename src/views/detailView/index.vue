@@ -1,6 +1,11 @@
 <template>
     <div class="w-[100vw] h-[100vh] flex flex-wrap justify-center items-center">
         <div ref="canvasDiv" id="canvasDiv" class="grow w-[65%] h-[100%] bg-slate-100 flex flex-wrap justify-center items-center">
+            <div v-show="isLineShow" class="top-[80px] flex flex-col absolute items-center">
+                <span class="text-slate-500">灰色實線：圖稿預留出血框(11.4 x 11.4 cm)，若有滿版底色請務必填滿至此。</span>
+                <span class="text-red-700">紅色實線：成品外框(11 x 11 cm)。</span>
+                <span class="text-Indigo-800">虛線：安全範圍(10.4 x 10.4 cm)，請將重要圖文限制在此虛線框內。</span>
+            </div>
             <canvas id="canvas"></canvas>
             <div class="w-[56px] right-[400px] bottom-[40px] flex flex-col absolute items-center">
                 <div
@@ -10,7 +15,7 @@
                     <button class="w-[64px] h-[64px] bg-white rounded-full flex justify-center items-center shadow-md">
                         <el-icon :size="28"><component :is="item.icon"></component></el-icon>
                     </button>
-                    <div>{{item.font}}</div>
+                    <span>{{item.font}}</span>
                 </div>
             </div>
         </div>
@@ -45,6 +50,10 @@ import img_1 from '@/assets/img/mat-2.png'
 import img_2 from '@/assets/img/mat-2.png'
 import img_3 from '@/assets/img/mat-2.png'
 import img_4 from '@/assets/img/mat-2.png'
+import img_1_line from '@/assets/img/mat-2-line.png'
+import img_2_line from '@/assets/img/mat-2-line.png'
+import img_3_line from '@/assets/img/mat-2-line.png'
+import img_4_line from '@/assets/img/mat-2-line.png'
 
 const modeData = ref(
     [
@@ -75,13 +84,19 @@ provide('filePictureList', filePictureList)
 
 const { width: canvasDivWidth, height: canvasDivHeight } = useElementSize(canvasDiv)
 let canvas = null
-const mode = ref(2)
+const mode = ref(0)
 provide('mode', mode)
 const backgronndImgUrl = ref([
     img_1,
     img_2,
     img_3,
     img_4
+])
+const lineImgUrl = ref([
+    img_1_line,
+    img_2_line,
+    img_3_line,
+    img_4_line
 ])
 provide('backgronndImgUrl',backgronndImgUrl)
 let sizeObj = {
@@ -115,26 +130,84 @@ const getImgSize = (index) => {
         image.onerror = reject
     })
 }
-//渲染背景
-const reBackground = async(index,imgData) => {
-    let chose = backgronndImgUrl.value[index || 0]
-    
-    fabric.Image.fromURL(chose, (img) => {
 
+let imageLineObj = null;
+const isLineShow = ref(false);
+// 檢查是否選擇物件
+const checkSelection = () => {
+    let target = canvas.getActiveObject()
+    if (target) {
+        // 如果有選中的物件，顯示圖片
+        if (imageLineObj) {
+            isLineShow.value = true;
+            imageLineObj.set('opacity', 1);
+            canvas.renderAll();
+        }
+    } else {
+        // 如果沒有選中的物件，隱藏圖片
+        if (imageLineObj) {
+            isLineShow.value = false;
+            imageLineObj.set('opacity', 0);
+            canvas.renderAll();
+        }
+    }
+}
+//渲染出血線
+const setLine = async(index, imgData) => {
+    // 加入出血線
+    let chose_line = lineImgUrl.value[index || 0]
+    fabric.Image.fromURL(chose_line, (img) => {
+        let scale = Math.min(imgData.width / img.width, imgData.height / img.height);
         const oImg = img.set({
             left: 0,
             top: 0,
-            // left: (canvasDivWidth.value - imgData.width)/2,
-            // top: (canvasDivHeight.value - imgData.height)/2,
-            // scaleX: (imgData.width/img.width).toFixed(2),
-            // scaleY: (imgData.height/img.height).toFixed(2),
-            // angle: 0,
-            // width: imgData.width,
-            // height: imgData.height,
+            scaleX: scale,
+            scaleY: scale,
+            selectable: false, // 設置圖片不可選擇 
+            evented: false,
+            opacity: 0 // 初始為隱藏
+        });
+
+        // 保存圖片對象但不添加到畫布
+        imageLineObj = oImg;
+        canvas.add(imageLineObj);
+        canvas.renderAll();
+    });
+
+    canvas.on('selection:updated', checkSelection);
+    canvas.on('selection:created', checkSelection);
+    canvas.on('selection:cleared', checkSelection);
+}
+
+let imageBackgroundObj = null;
+//渲染背景
+const reBackground = async(index,imgData) => {
+    let graphItem = new fabric.Rect({
+        width: imgData.width, 
+        height: imgData.height, 
+        left: 0,
+        top: 0,
+        fill: "#FFFFFF",
+        cornerStrokeColor: "#FFFFFF",
+        borderColor:"#FFFFFF",
+    })
+    canvas.setBackgroundImage(graphItem).renderAll()
+
+    let chose = backgronndImgUrl.value[index || 0]
+    fabric.Image.fromURL(chose, (img) => {
+        let scale = Math.min(imgData.width / img.width, imgData.height / img.height);
+        const oImg = img.set({
+            left: 0,
+            top: 0,
+            scaleX: scale,
+            scaleY: scale,
+            selectable: false, // 設置圖片不可選擇
+            evented: false,
         })
-        oImg.scaleToHeight(imgData.height)     
-        canvas.setBackgroundImage(oImg).renderAll()
-    })    
+        imageBackgroundObj = oImg;
+        canvas.add(imageBackgroundObj);
+        canvas.renderAll();
+    })
 }
 //設定背景
 const setBackground = async(index) => {
@@ -152,7 +225,8 @@ const setBackground = async(index) => {
         sizeObj.imgHeight = res.height
 
         createCanvas()
-        reBackground(index,res)
+        reBackground(index, res)
+        setLine(index, res)
     })
     loading.value = false
 }
@@ -160,6 +234,12 @@ provide('setBackground', setBackground)
 const route = useRoute()
 const id = route.params.id
 setBackground(id)
+
+const bringLineToFront = () => {
+    canvas.bringToFront(imageBackgroundObj);
+    canvas.bringToFront(imageLineObj);
+}
+
 //切換模式
 const changeMode = (val) => {
     mode.value = val
@@ -219,7 +299,7 @@ const choseImg = (index) => {
 provide('choseImg', choseImg)
 //拖曳事件處理
 const dropImg = (e) => {
-    if(mode.value !== 2){
+    if(mode.value !== 0){
         return false
     }
 
@@ -252,6 +332,7 @@ const dropImg = (e) => {
         img.scaleToHeight(countHeight)
 
         canvas.add(img).renderAll(); 
+        bringLineToFront();
     });
 }
 //刪除已選物件
@@ -287,6 +368,7 @@ const addText = (textObj) => {
     })
     canvas.add(text)
     cancelSelect()
+    bringLineToFront()
 }
 provide('addText',addText)
 //把物件往上一層
@@ -303,7 +385,8 @@ provide('up',up)
 const finalUp = () => {
     let target = canvas.getActiveObject()
     if(target){
-        canvas.bringToFront(target)
+        canvas.moveTo(target, canvas.getObjects().length - 1 - 2);
+        // canvas.bringToFront(target)
         canvas.renderAll()
         cancelSelect()
     }
@@ -313,7 +396,12 @@ provide('finalUp',finalUp)
 const down = () => {
     let target = canvas.getActiveObject()
     if(target){
-        canvas.sendBackwards(target)
+        let index = canvas.getObjects().indexOf(target);
+        index++;
+        if (index > canvas.getObjects().length - 1 - 2) {
+            index = canvas.getObjects().length - 1 - 2;
+        }
+        canvas.moveTo(target, index);
         canvas.renderAll()
         cancelSelect()
     }
@@ -334,8 +422,8 @@ const delAll = () => {
     let target = canvas.getObjects();
 
     if(target.length){
-        for(let item of target){
-            canvas.remove(item)
+        for(let i = 0; i < (target.length - 2); i++){
+            canvas.remove(target[i])
         }
         canvas.renderAll()
     }
@@ -350,19 +438,67 @@ const downFile = (data) => {
 }
 //輸出檔案
 const exportJPG = () => {
-    let data = canvas.toDataURL().replace('image/png','image/jpeg')
-    downFile(data)
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 1);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 0);
+        canvas.renderAll();
+    }
+    let data = canvas.toDataURL().replace('image/png','image/jpeg');
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 0);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 1);
+        canvas.renderAll();
+    }
+    downFile(data);
 }
 provide('exportJPG',exportJPG)
 //輸出檔案
 const exportPNG = () => {
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 1);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 0);
+        canvas.renderAll();
+    }
     let data = canvas.toDataURL();
-    downFile(data)
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 0);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 1);
+        canvas.renderAll();
+    }
+    downFile(data);
 }
 provide('exportPNG',exportPNG)
 //輸出檔案
 const exportPDF = () => {
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 1);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 0);
+        canvas.renderAll();
+    }
     let data = canvas.toDataURL();
+    if (imageLineObj) {
+        imageLineObj.set('opacity', 0);
+        canvas.renderAll();
+    }
+    if (imageBackgroundObj) {
+        imageBackgroundObj.set('opacity', 1);
+        canvas.renderAll();
+    }
     const doc = new jsPDF('portrait','','a4');
     doc.addImage(data, "PNG", 5, 10);
     doc.save('測試圖片'+ Date.now() +".pdf");
@@ -381,11 +517,11 @@ const createCanvas = () => {
         hoverCursor: 'progress', // 移動時鼠標顯示
         freeDrawingCursor: 'all-scroll', // 畫畫模式時鼠標模式
         backgroundColor: 'rgb(244,244,244)', // 背景色,
-        //   backgroundImage: 'https://www.pakutaso.com/shared/img/thumb/neko1869IMG_9074_TP_V.jpg' // 背景圖片
     })
 
     canvas.on('drop', dropImg)
 }
+
 // 解決套件刪除問題
 const recoverCanvasDom = () => {
     let canvasContainerCanvasDom = document.getElementsByClassName("canvas-container");
@@ -466,6 +602,7 @@ const addGraph = (obj) => {
 
     if(graphItem){
         canvas.add(graphItem).renderAll()
+        bringLineToFront()
     }
     
 }

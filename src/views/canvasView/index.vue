@@ -210,6 +210,7 @@ const delFile = (val) => {
 provide('delFile', delFile)
 //從圖片選單選擇圖片
 const choseImg = (index) => {
+    console.log("choseImg")
     choseFile = filePictureList.value[index]
 }
 provide('choseImg', choseImg)
