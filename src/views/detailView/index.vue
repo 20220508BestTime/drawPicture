@@ -1,13 +1,13 @@
 <template>
     <div class="w-[100vw] h-[100vh] flex flex-wrap justify-center items-center">
-        <div ref="canvasDiv" id="canvasDiv" class="grow w-[65%] h-[100%] bg-slate-100 flex flex-wrap justify-center items-center">
-            <div v-show="isLineShow" class="top-[80px] flex flex-col absolute items-center">
-                <span class="text-slate-500">灰色實線：圖稿預留出血框(11.4 x 11.4 cm)，若有滿版底色請務必填滿至此。</span>
-                <span class="text-red-700">紅色實線：成品外框(11 x 11 cm)。</span>
-                <span class="text-Indigo-800">虛線：安全範圍(10.4 x 10.4 cm)，請將重要圖文限制在此虛線框內。</span>
+        <div ref="canvasDiv" id="canvasDiv" class="grow w-[65%] h-[100%] bg-slate-100 flex flex-wrap relative justify-center items-center">
+            <div v-show="isLineShow" class="top-[10px] flex flex-col absolute items-center z-10">
+                <span class="text-slate-500 text-sm">灰色實線：圖稿預留出血框(11.4 x 11.4 cm)，若有滿版底色請務必填滿至此。</span>
+                <span class="text-red-700 text-sm">紅色實線：成品外框(11 x 11 cm)。</span>
+                <span class="text-Indigo-800 text-sm">虛線：安全範圍(10.4 x 10.4 cm)，請將重要圖文限制在此虛線框內。</span>
             </div>
             <canvas id="canvas"></canvas>
-            <div class="w-[56px] right-[400px] bottom-[40px] flex flex-col absolute items-center">
+            <div class="w-[56px] right-[40px] bottom-[40px] flex flex-col absolute items-center">
                 <div
                     v-for="(item, index) in modeData" :key="index"
                     @click="changeMode(index)"

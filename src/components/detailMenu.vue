@@ -4,7 +4,7 @@
             <div class="w-full text-3xl flex flex-wrap justify-center items-center">{{modeData[mode].font}}</div>
             <div class="w-full text-3xl flex flex-wrap justify-center items-center border-b-2"></div>
             <template v-if="mode == 0">
-                <div class="w-full h-[7%] p-1 flex flex-wrap justify-center items-start overflow-y-auto overflow-x-hidden gap-[10px]">
+                <div class="w-full h-[7%] min-h-[56px] p-1 flex flex-wrap justify-center items-start overflow-y-auto overflow-x-hidden gap-[10px]">
                     <div class="w-auto h-auto flex flex-wrap justify-center items-center gap-[10px]">
                         <input class="w-full" @change="onFileChangedPicture($event)" ref="myFile" type="file" id="myFile" name="filename" style="display: none;">
                         <button @click="triggerMyFile()" class="min-w-[280px] w-[auto] h-[36px] mt-2 text-white bg-blue-500 rounded-sm shadow-md font-bold">
